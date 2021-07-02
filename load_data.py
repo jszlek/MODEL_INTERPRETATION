@@ -11,7 +11,7 @@ def load_data(filename: str = None, output: str = None, separator: str = ','):
         import pandas as pd
         import numpy as np
 
-        tmp_data = pd.read_csv(filename, sep=separator, dtype=np.float64)
+        tmp_data = pd.read_csv("./"+filename, sep=separator, dtype=np.float64)
         data_input = tmp_data.drop(output, axis=1)
         data_output = tmp_data[output]
 
