@@ -3,7 +3,7 @@ import shap
 import matplotlib.pyplot as plt
 # import ipywidgets as widgets
 import dalex as dx
-from aux_functions import extract_pipeline, prepare_directories
+from aux_functions import extract_pipeline, prepare_directories, use_shap, use_pdp
 from load_data import load_data
 
 
@@ -12,10 +12,22 @@ my_data_sep = '\t'
 my_data_output = 'Q'
 
 my_model_filename = 'tpot_best_model.py'
-my_model = 'h2o'   # options 'tpot', 'h2o'
+my_model = 'tpot'   # options 'tpot', 'h2o'
 
-my_sample_data = 'kmeans'      # options 'all', 'kmeans'
-my_kmeans_n = 1
+my_sample_data: str = 'kmeans'      # options 'all', 'kmeans'
+my_kmeans_n = 2
+
+# methods
+
+if_use_shap = True
+if_use_pdp = True
+if_use_ale = True
+if_use_iml = True
+if_use_dalex = True
+if_use_eli5 = True
+if_use_lime = True
+
+
 
 if my_model == 'tpot':
 
@@ -32,41 +44,12 @@ if my_model == 'tpot':
 
     # Load pipeline and fit it to provided data
     exec(open('tpot_pipeline.py').read())
-    exported_pipeline.fit(training_features, training_target)
-    # init js
-    shap.initjs()
+    my_fitted_model = exported_pipeline.fit(training_features, training_target)
 
-    if my_sample_data == 'kmeans':
-        # explain sample the predictions in the training set
-        explainer = shap.KernelExplainer(exported_pipeline.predict, shap.kmeans(training_features, my_kmeans_n))
-    elif my_sample_data == 'all':
-        # explain all the predictions in the test set
-        explainer = shap.KernelExplainer(exported_pipeline.predict, training_features)
+    #use_shap(model=my_model, sample_data=my_sample_data, kmeans_n=my_kmeans_n, data_features=training_features)
 
-    shap_values = explainer.shap_values(training_features)
+    use_pdp(model=my_fitted_model, data_features=training_features, data_target=training_target)
 
-    f = plt.figure()
-    shap.summary_plot(shap_values, training_features, show=False)
-    f.savefig("SHAP_plots/summary_plot.pdf", bbox_inches='tight')
-    plt.close()
-
-    f = plt.figure()
-    shap.summary_plot(shap_values, training_features, plot_type="bar", show=False)
-    f.savefig("SHAP_plots/summary_plot_bar.pdf", bbox_inches='tight')
-    plt.close()
-
-    col_list = list(training_features.columns)
-
-    from matplotlib.backends.backend_pdf import PdfPages
-
-    for i in col_list:
-        pdf = PdfPages("SHAP_plots/" + i + '_out.pdf')
-        shap.dependence_plot(str(i), shap_values, training_features, show=False)
-        pdf.savefig()
-        pdf.close()
-
-    f = shap.force_plot(explainer.expected_value, shap_values, training_features, plot_cmap="DrDb", show=False)
-    shap.save_html("SHAP_html/force_plot.html", f)
 
 if my_model == 'h2o':
 
@@ -93,30 +76,5 @@ if my_model == 'h2o':
     h2o_wrapper = H2OPredWrapper(h2o_bst_model, feature_names)
     # This is the core code for Shapley values calculation
 
-    explainer = shap.KernelExplainer(h2o_wrapper.predict, shap.kmeans(training_features, 2))
-    shap_values = explainer.shap_values(training_features)
+    use_shap(h2o_wrapper, my_sample_data, my_kmeans_n, training_features)
 
-    # initialize js for SHAP
-    shap.initjs()
-    f = plt.figure()
-    shap.summary_plot(shap_values, training_features, show=False)
-    f.savefig("SHAP_plots/summary_plot.pdf", bbox_inches='tight')
-    plt.close()
-
-    f = plt.figure()
-    shap.summary_plot(shap_values, training_features, plot_type="bar", show=False)
-    f.savefig("SHAP_plots/summary_plot_bar.pdf", bbox_inches='tight')
-    plt.close()
-
-    col_list = list(training_features.columns)
-
-    from matplotlib.backends.backend_pdf import PdfPages
-
-    for i in col_list:
-        pdf = PdfPages("SHAP_plots/" + i + '_out.pdf')
-        shap.dependence_plot(str(i), shap_values, training_features, show=False)
-        pdf.savefig()
-        pdf.close()
-
-    f = shap.force_plot(explainer.expected_value, shap_values, training_features, plot_cmap="DrDb", show=False)
-    shap.save_html("SHAP_html/force_plot.html", f)
