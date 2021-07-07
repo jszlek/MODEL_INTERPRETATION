@@ -60,12 +60,14 @@ def prepare_directories():
     my_shap_plots_dir = my_current_dir.joinpath(str(my_current_dir) + '/SHAP_plots')
     my_shap_html_dir = my_current_dir.joinpath(str(my_current_dir) + '/SHAP_html')
     my_ale_plots_dir = my_current_dir.joinpath(str(my_current_dir) + '/ALE_plots')
+    my_ale_html_dir = my_current_dir.joinpath(str(my_current_dir) + '/ALE_html')
 
     # check subdirectory structure
     # ----------------------------------------
     Path(my_shap_plots_dir).mkdir(parents=True, exist_ok=True)
     Path(my_shap_html_dir).mkdir(parents=True, exist_ok=True)
     Path(my_ale_plots_dir).mkdir(parents=True, exist_ok=True)
+    Path(my_ale_html_dir).mkdir(parents=True, exist_ok=True)
 
 
 # ---------------------------
@@ -92,15 +94,53 @@ def use_lime():
 # PDP
 # -----------------------------
 
-def use_pdp(model, data_features, data_target):
+def use_dalex(model, data_features, data_target, max_deep_tree, max_vars_tree, explain_preds=None):
     import dalex as dx
+    import matplotlib.pyplot as plt
     import plotly
+    from sklearn import tree
+    from matplotlib.backends.backend_pdf import PdfPages
 
     my_fitted_model_exp = dx.Explainer(model, data_features, data_target,
                                        label="Partial_dependency_plot")
-    pd_model = my_fitted_model_exp.model_profile(variables=list(data_features.columns.unique()))
+
+    # Permutation variable importance
+    perm_var_imp = my_fitted_model_exp.model_parts(loss_function='rmse')
+    # save data.frame with results
+    perm_var_imp.result.to_csv("ALE_plots/permutation_variable_importance.txt", sep='\t')
+    # plot the results
+    f = plt.figure()
+    perm_var_imp.plot(show=False)
+    f.savefig("ALE_plots/permutation_variable_importance_plot.pdf", bbox_inches='tight')
+    plt.close()
+
+    # Partial Dependence Plots
+    pd_model = my_fitted_model_exp.model_profile(variables=list(data_features.columns.unique()), type='partial')
     fig = pd_model.plot(show=False)
-    plotly.offline.plot(fig, filename='SHAP_plots/pdp_1d_plot.html', auto_open=False)
+    plotly.offline.plot(fig, filename='ALE_plots/pdp_1d_plot.html', auto_open=False)
+
+    surrogate_model = my_fitted_model_exp.model_surrogate(type='tree', max_depth=max_deep_tree, max_vars=max_vars_tree)
+    plt.figure(figsize=(16, 9))
+    _ = tree.plot_tree(surrogate_model, filled=True, feature_names=data_features.columns, fontsize=9, rounded=True, proportion=True)
+    plt.savefig("ALE_plots/decision_tree_surrogate_model.pdf", bbox_inches='tight')
+    plt.close()
+
+    col_list = list(data_features.columns)
+    my_model_diagnostics = my_fitted_model_exp.model_diagnostics()
+
+    for i in col_list:
+        fig = my_model_diagnostics.plot(variable=i, yvariable='residuals', marker_size=5, show=False)
+        plotly.offline.plot(fig, filename=str('ALE_plots/'+ i +'_residual' +'.html'), auto_open=False)
+
+    if explain_preds is not None:
+        for i in range(len(data_features)):
+            # Break Down (with predict_parts)
+            my_fitted_model_exp_pparts = my_fitted_model_exp.predict_parts(new_observation=data_features.loc[i,], type="break_down")
+            # plot Break Down
+            fig = my_fitted_model_exp_pparts.plot(show=False)
+            plotly.offline.plot(fig, filename=str("ALE_html/explain_pred_row_no_" + str(i) + '_out.html'), auto_open=False)
+
+    return None
 
 
 # -----------------------------
