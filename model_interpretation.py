@@ -11,7 +11,7 @@ my_data_filename = 'test_h2o_shap.txt'
 my_data_sep = '\t'
 my_data_output = 'Q'
 
-my_model_filename = 'StackedEnsemble_AllModels_AutoML_20210707_132949'
+my_model_filename = 'GBM_grid__1_AutoML_20210715_234423_model_7'
 my_model = 'h2o'   # options 'tpot', 'h2o'
 
 my_sample_data: str = 'kmeans'      # options 'all', 'kmeans'
@@ -79,7 +79,7 @@ if my_model == 'h2o':
 
     # We will load saved model rather than extract the best model
     # h2o_bst_model = aml_10cv.leader
-    h2o_bst_model = h2o.load_model('./StackedEnsemble_AllModels_AutoML_20210707_132949')
+    h2o_bst_model = h2o.load_model(my_model_filename)
     h2o_wrapper = H2OPredWrapper(h2o_bst_model, feature_names)
     # This is the core code for Shapley values calculation
 
@@ -92,7 +92,7 @@ if my_model == 'h2o':
     if if_use_h2o == True:
 
         if check_min_h2o_version():
-            use_h2o()
+            use_h2o(model=h2o_bst_model, data_features=training_features, data_target=training_target)
         else:
             print("Please update H2O package! For anaconda users in console type:"+
                   "\n" +

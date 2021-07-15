@@ -208,10 +208,21 @@ def use_shap(model, sample_data, kmeans_n, data_features):
 # Explain model - internal function of H2O
 # ----------------------------------------
 
-def use_h2o(model, data_features):
+def use_h2o(model, data_features, data_target):
+    import pandas as pd
+    import matplotlib as mpl
+    mpl.use('Agg')
     import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
     import h2o
-    f = plt.figure()
-    exp = model.explain(data_features)
-    f.savefig("SHAP_plots/h2o_explain_models.pdf", bbox_inches='tight')
+    # The PDF document
+    pdf_pages = PdfPages('SHAP_plots/h2o_explain_models.pdf')
+    dataset = pd.concat([data_features,data_target], axis=1)
+    dataset_frame = h2o.H2OFrame(dataset)
+    fig = plt.figure()
+    _ = model.explain(dataset_frame)
+    ax = fig.add_subplot(111)
+    plt.savefig('SHAP_plots/h2o_explain_models.pdf')
     plt.close()
+    # Write the PDF document to the disk
+    pdf_pages.close()

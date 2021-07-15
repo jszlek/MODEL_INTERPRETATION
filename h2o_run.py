@@ -28,11 +28,12 @@ training_frame = h2o.H2OFrame(train_set)
 testing_frame = h2o.H2OFrame(test_set)
 
 # autoML settings
-aml_model = H2OAutoML(max_runtime_secs=90,
+aml_model = H2OAutoML(max_runtime_secs=180,
                       nfolds=10,
                       keep_cross_validation_models=True,
                       keep_cross_validation_predictions=True,
                       keep_cross_validation_fold_assignment=True,
+                      exclude_algos=['StackedEnsemble'],
                       verbosity='info',
                       sort_metric='RMSE')
 
