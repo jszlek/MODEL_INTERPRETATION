@@ -70,6 +70,21 @@ def prepare_directories():
     Path(my_ale_html_dir).mkdir(parents=True, exist_ok=True)
 
 
+# -----------------------
+# Prepare dirs
+# -----------------------
+def check_min_h2o_version():
+    import sys
+    import h2o
+    from packaging import version
+    # checking h2o version for use_h2o function
+    current_h2o_version = sys.modules[h2o.__package__].__version__
+    min_h2o_version = "3.32.1.1"
+    print("Your H2O package version is: " + current_h2o_version)
+    print("Minimal H2O package version to use this feature is: " + min_h2o_version)
+    return version.parse(current_h2o_version) >= version.parse(min_h2o_version)
+
+
 # ---------------------------
 # LIME
 # ---------------------------
@@ -91,7 +106,7 @@ def use_lime():
 
 
 # -----------------------------
-# PDP
+# XAI by Dalex
 # -----------------------------
 
 def use_dalex(model, data_features, data_target, max_deep_tree, max_vars_tree, explain_preds=None):
@@ -144,7 +159,7 @@ def use_dalex(model, data_features, data_target, max_deep_tree, max_vars_tree, e
 
 
 # -----------------------------
-# SHAP
+# Shapley values by SHAP
 # -----------------------------
 
 def use_shap(model, sample_data, kmeans_n, data_features):
@@ -187,3 +202,16 @@ def use_shap(model, sample_data, kmeans_n, data_features):
     shap.save_html("SHAP_html/force_plot.html", f)
 
     return None
+
+
+# ----------------------------------------
+# Explain model - internal function of H2O
+# ----------------------------------------
+
+def use_h2o(model, data_features):
+    import matplotlib.pyplot as plt
+    import h2o
+    f = plt.figure()
+    exp = model.explain(data_features)
+    f.savefig("SHAP_plots/h2o_explain_models.pdf", bbox_inches='tight')
+    plt.close()

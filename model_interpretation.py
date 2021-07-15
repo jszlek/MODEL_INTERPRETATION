@@ -3,7 +3,7 @@ import shap
 import matplotlib.pyplot as plt
 # import ipywidgets as widgets
 import dalex as dx
-from aux_functions import extract_pipeline, prepare_directories, use_shap, use_dalex
+from aux_functions import extract_pipeline, prepare_directories, use_shap, use_dalex, use_h2o, check_min_h2o_version
 from load_data import load_data
 
 
@@ -11,21 +11,22 @@ my_data_filename = 'test_h2o_shap.txt'
 my_data_sep = '\t'
 my_data_output = 'Q'
 
-my_model_filename = 'tpot_best_model.py'
-my_model = 'tpot'   # options 'tpot', 'h2o'
+my_model_filename = 'StackedEnsemble_AllModels_AutoML_20210707_132949'
+my_model = 'h2o'   # options 'tpot', 'h2o'
 
 my_sample_data: str = 'kmeans'      # options 'all', 'kmeans'
 my_kmeans_n = 2
 
 # methods
 
-if_use_shap = True
+if_use_shap = False
 if_use_pdp = True
 if_use_ale = True
 if_use_iml = True
-if_use_dalex = True
+if_use_dalex = False
 if_use_eli5 = True
 if_use_lime = True
+if_use_h2o = True   # can be applied only for h2o models and H2O platform
 
 
 
@@ -87,3 +88,14 @@ if my_model == 'h2o':
 
     if if_use_dalex == True:
         use_dalex(model=h2o_wrapper, data_features=training_features, data_target=training_target, max_deep_tree=5, max_vars_tree=5)
+
+    if if_use_h2o == True:
+
+        if check_min_h2o_version():
+            use_h2o()
+        else:
+            print("Please update H2O package! For anaconda users in console type:"+
+                  "\n" +
+                  "'conda install -c h2oai -y h2o'>=3.32.1.1''")
+
+
