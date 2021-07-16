@@ -219,10 +219,32 @@ def use_h2o(model, data_features, data_target):
     pdf_pages = PdfPages('SHAP_plots/h2o_explain_models.pdf')
     dataset = pd.concat([data_features,data_target], axis=1)
     dataset_frame = h2o.H2OFrame(dataset)
-    fig = plt.figure()
-    _ = model.explain(dataset_frame)
-    ax = fig.add_subplot(111)
-    plt.savefig('SHAP_plots/h2o_explain_models.pdf')
-    plt.close()
-    # Write the PDF document to the disk
-    pdf_pages.close()
+
+    expl_object = model.explain(dataset_frame)
+
+    pdf = PdfPages("residuals_h2o_explain_object_output.pdf")
+    for i in expl_object.get('residual_analysis').get('plots').items().__iter__():
+        pdf.savefig(i[1])
+    pdf.close()
+
+    pdf = PdfPages("pdp_h2o_explain_object_output.pdf")
+    for i in expl_object.get('pdp').get('plots').items().__iter__():
+        pdf.savefig(i[1])
+    pdf.close()
+
+    pdf = PdfPages("varimp_h2o_explain_object_output.pdf")
+    for i in expl_object.get('varimp').get('plots').items().__iter__():
+        pdf.savefig(i[1])
+    pdf.close()
+
+    pdf = PdfPages("shap_summary_h2o_explain_object_output.pdf")
+    for i in expl_object.get('shap_summary').get('plots').items().__iter__():
+        pdf.savefig(i[1])
+    pdf.close()
+
+    pdf = PdfPages("ice_h2o_explain_object_output.pdf")
+    for i in expl_object.get('ice').get('plots').items().__iter__():
+        for k in i[1].items():
+            pdf.savefig(k[1])
+    pdf.close()
+
