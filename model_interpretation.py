@@ -1,33 +1,24 @@
 import pandas as pd
 import shap
 import matplotlib.pyplot as plt
-# import ipywidgets as widgets
 import dalex as dx
-from aux_functions import extract_pipeline, prepare_directories, use_shap, use_dalex, use_h2o, check_min_h2o_version
-from load_data import load_data
+from aux_functions import extract_pipeline, prepare_directories, use_shap, use_dalex, use_h2o, check_min_h2o_version, load_data
 
 
 my_data_filename = 'test_h2o_shap.txt'
 my_data_sep = '\t'
 my_data_output = 'Q'
 
-my_model_filename = 'GBM_grid__1_AutoML_20210715_234423_model_7'
+my_model_filename = 'StackedEnsemble_BestOfFamily_AutoML_20210715_231637'
 my_model = 'h2o'   # options 'tpot', 'h2o'
 
 my_sample_data: str = 'kmeans'      # options 'all', 'kmeans'
 my_kmeans_n = 2
 
 # methods
-
-if_use_shap = False
-if_use_pdp = True
-if_use_ale = True
-if_use_iml = True
-if_use_dalex = False
-if_use_eli5 = True
-if_use_lime = True
+if_use_shap = True
+if_use_dalex = True
 if_use_h2o = True   # can be applied only for h2o models and H2O platform
-
 
 
 if my_model == 'tpot':
@@ -55,7 +46,6 @@ if my_model == 'tpot':
     if if_use_shap == True:
         use_shap(model=my_fitted_model, data_features=training_features,
                  sample_data=my_sample_data, kmeans_n=my_kmeans_n)
-
 
 
 if my_model == 'h2o':

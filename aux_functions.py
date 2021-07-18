@@ -1,5 +1,32 @@
-# function to extract only pipeline from exported tpot py script
+# -----------------------------------------------------
+# A set of auxilary functions
+# -----------------------------------------------------
 
+
+# -----------------------
+# a function to load data
+# -----------------------
+
+def load_data(filename: str = None, output: str = None, separator: str = ','):
+
+    valid_sep = {",", "\t", " "}
+    if separator not in valid_sep:
+        raise ValueError("separator must be one of %r." % valid_sep)
+
+    if filename and output is not None:
+        import pandas as pd
+        import numpy as np
+
+        tmp_data = pd.read_csv("./"+filename, sep=separator, dtype=np.float64)
+        data_input = tmp_data.drop(output, axis=1)
+        data_output = tmp_data[output]
+
+    return [data_input, data_output]
+
+
+# --------------------------------------------------------------
+# function to extract only pipeline from exported tpot py script
+# --------------------------------------------------------------
 
 def extract_pipeline(filename: str = None, lines_to_remove: list = ['']):
     # check for existance of filename
@@ -59,8 +86,9 @@ def prepare_directories():
     # -----------------------
     my_shap_plots_dir = my_current_dir.joinpath(str(my_current_dir) + '/SHAP_plots')
     my_shap_html_dir = my_current_dir.joinpath(str(my_current_dir) + '/SHAP_html')
-    my_ale_plots_dir = my_current_dir.joinpath(str(my_current_dir) + '/ALE_plots')
-    my_ale_html_dir = my_current_dir.joinpath(str(my_current_dir) + '/ALE_html')
+    my_ale_plots_dir = my_current_dir.joinpath(str(my_current_dir) + '/DALEX_plots')
+    my_ale_html_dir = my_current_dir.joinpath(str(my_current_dir) + '/DALEX_html')
+    my_h2o_plots_dir = my_current_dir.joinpath(str(my_current_dir) + '/H2O_plots')
 
     # check subdirectory structure
     # ----------------------------------------
@@ -68,10 +96,11 @@ def prepare_directories():
     Path(my_shap_html_dir).mkdir(parents=True, exist_ok=True)
     Path(my_ale_plots_dir).mkdir(parents=True, exist_ok=True)
     Path(my_ale_html_dir).mkdir(parents=True, exist_ok=True)
+    Path(my_h2o_plots_dir).mkdir(parents=True, exist_ok=True)
 
 
 # -----------------------
-# Prepare dirs
+# check h2o version
 # -----------------------
 def check_min_h2o_version():
     import sys
@@ -89,7 +118,7 @@ def check_min_h2o_version():
 # LIME
 # ---------------------------
 
-def use_lime():
+def use_lime(): # currently unused part of the code
     import lime
     import lime.lime_tabular
 
@@ -122,22 +151,22 @@ def use_dalex(model, data_features, data_target, max_deep_tree, max_vars_tree, e
     # Permutation variable importance
     perm_var_imp = my_fitted_model_exp.model_parts(loss_function='rmse')
     # save data.frame with results
-    perm_var_imp.result.to_csv("ALE_plots/permutation_variable_importance.txt", sep='\t')
+    perm_var_imp.result.to_csv("DALEX_plots/permutation_variable_importance.txt", sep='\t')
     # plot the results
     f = plt.figure()
     perm_var_imp.plot(show=False)
-    f.savefig("ALE_plots/permutation_variable_importance_plot.pdf", bbox_inches='tight')
+    f.savefig("DALEX_plots/permutation_variable_importance_plot.pdf", bbox_inches='tight')
     plt.close()
 
     # Partial Dependence Plots
     pd_model = my_fitted_model_exp.model_profile(variables=list(data_features.columns.unique()), type='partial')
     fig = pd_model.plot(show=False)
-    plotly.offline.plot(fig, filename='ALE_plots/pdp_1d_plot.html', auto_open=False)
+    plotly.offline.plot(fig, filename='DALEX_plots/pdp_1d_plot.html', auto_open=False)
 
     surrogate_model = my_fitted_model_exp.model_surrogate(type='tree', max_depth=max_deep_tree, max_vars=max_vars_tree)
     plt.figure(figsize=(16, 9))
     _ = tree.plot_tree(surrogate_model, filled=True, feature_names=data_features.columns, fontsize=9, rounded=True, proportion=True)
-    plt.savefig("ALE_plots/decision_tree_surrogate_model.pdf", bbox_inches='tight')
+    plt.savefig("DALEX_plots/decision_tree_surrogate_model.pdf", bbox_inches='tight')
     plt.close()
 
     col_list = list(data_features.columns)
@@ -145,7 +174,7 @@ def use_dalex(model, data_features, data_target, max_deep_tree, max_vars_tree, e
 
     for i in col_list:
         fig = my_model_diagnostics.plot(variable=i, yvariable='residuals', marker_size=5, show=False)
-        plotly.offline.plot(fig, filename=str('ALE_plots/'+ i +'_residual' +'.html'), auto_open=False)
+        plotly.offline.plot(fig, filename=str('DALEX_plots/'+ i +'_residual' +'.html'), auto_open=False)
 
     if explain_preds is not None:
         for i in range(len(data_features)):
@@ -153,7 +182,7 @@ def use_dalex(model, data_features, data_target, max_deep_tree, max_vars_tree, e
             my_fitted_model_exp_pparts = my_fitted_model_exp.predict_parts(new_observation=data_features.loc[i,], type="break_down")
             # plot Break Down
             fig = my_fitted_model_exp_pparts.plot(show=False)
-            plotly.offline.plot(fig, filename=str("ALE_html/explain_pred_row_no_" + str(i) + '_out.html'), auto_open=False)
+            plotly.offline.plot(fig, filename=str("DALEX_html/explain_pred_row_no_" + str(i) + '_out.html'), auto_open=False)
 
     return None
 
@@ -215,36 +244,50 @@ def use_h2o(model, data_features, data_target):
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
     import h2o
-    # The PDF document
-    pdf_pages = PdfPages('SHAP_plots/h2o_explain_models.pdf')
-    dataset = pd.concat([data_features,data_target], axis=1)
+
+    # the data
+    dataset = pd.concat([data_features, data_target], axis=1)
     dataset_frame = h2o.H2OFrame(dataset)
 
     expl_object = model.explain(dataset_frame)
 
-    pdf = PdfPages("residuals_h2o_explain_object_output.pdf")
-    for i in expl_object.get('residual_analysis').get('plots').items().__iter__():
-        pdf.savefig(i[1])
-    pdf.close()
+    try:
+        pdf = PdfPages("H2O_plots/residuals_h2o_explain_object_output.pdf")
+        for i in expl_object.get('residual_analysis').get('plots').items().__iter__():
+            pdf.savefig(i[1])
+        pdf.close()
+    except AttributeError:
+        print("Explain object of H2O model has no attribute Residual Analysis")
 
-    pdf = PdfPages("pdp_h2o_explain_object_output.pdf")
-    for i in expl_object.get('pdp').get('plots').items().__iter__():
-        pdf.savefig(i[1])
-    pdf.close()
+    try:
+        pdf = PdfPages("H2O_plots/pdp_h2o_explain_object_output.pdf")
+        for i in expl_object.get('pdp').get('plots').items().__iter__():
+            pdf.savefig(i[1])
+        pdf.close()
+    except AttributeError:
+        print("Explain object of H2O model has no attribute Partial Dependence Plot")
 
-    pdf = PdfPages("varimp_h2o_explain_object_output.pdf")
-    for i in expl_object.get('varimp').get('plots').items().__iter__():
-        pdf.savefig(i[1])
-    pdf.close()
+    try:
+        pdf = PdfPages("H2O_plots/varimp_h2o_explain_object_output.pdf")
+        for i in expl_object.get('varimp').get('plots').items().__iter__():
+            pdf.savefig(i[1])
+        pdf.close()
+    except AttributeError:
+        print("Explain object of H2O model has no attribute Variable Importance")
 
-    pdf = PdfPages("shap_summary_h2o_explain_object_output.pdf")
-    for i in expl_object.get('shap_summary').get('plots').items().__iter__():
-        pdf.savefig(i[1])
-    pdf.close()
+    try:
+        pdf = PdfPages("H2O_plots/shap_summary_h2o_explain_object_output.pdf")
+        for i in expl_object.get('shap_summary').get('plots').items().__iter__():
+            pdf.savefig(i[1])
+        pdf.close()
+    except AttributeError:
+        print("Explain object of H2O model has no attribute SHAP summary")
 
-    pdf = PdfPages("ice_h2o_explain_object_output.pdf")
-    for i in expl_object.get('ice').get('plots').items().__iter__():
-        for k in i[1].items():
-            pdf.savefig(k[1])
-    pdf.close()
-
+    try:
+        pdf = PdfPages("H2O_plots/ice_h2o_explain_object_output.pdf")
+        for i in expl_object.get('ice').get('plots').items().__iter__():
+            for k in i[1].items():
+                pdf.savefig(k[1])
+        pdf.close()
+    except AttributeError:
+        print("Explain object of H2O model has no attribute Individual Conditional Expectation")
