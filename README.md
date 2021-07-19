@@ -1,4 +1,6 @@
 # MODEL_INTERPRETATION
-model interpretation repo
-tpot and h2o functionality
-shap and dalex
+A model interpretation repo.  
+The script interprets tpot and h2o models.  
+It has shap, dalex and internal h2o interpretation methods implemented.  
+
+Please modify `config.ini` and start `model_interpretation.py` script.
