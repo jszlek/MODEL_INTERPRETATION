@@ -86,17 +86,18 @@ def prepare_directories():
     # -----------------------
     my_shap_plots_dir = my_current_dir.joinpath(str(my_current_dir) + '/SHAP_plots')
     my_shap_html_dir = my_current_dir.joinpath(str(my_current_dir) + '/SHAP_html')
-    my_ale_plots_dir = my_current_dir.joinpath(str(my_current_dir) + '/DALEX_plots')
-    my_ale_html_dir = my_current_dir.joinpath(str(my_current_dir) + '/DALEX_html')
+    my_dalex_plots_dir = my_current_dir.joinpath(str(my_current_dir) + '/DALEX_plots')
+    my_dalex_html_dir = my_current_dir.joinpath(str(my_current_dir) + '/DALEX_html')
     my_h2o_plots_dir = my_current_dir.joinpath(str(my_current_dir) + '/H2O_plots')
 
     # check subdirectory structure
     # ----------------------------------------
     Path(my_shap_plots_dir).mkdir(parents=True, exist_ok=True)
     Path(my_shap_html_dir).mkdir(parents=True, exist_ok=True)
-    Path(my_ale_plots_dir).mkdir(parents=True, exist_ok=True)
-    Path(my_ale_html_dir).mkdir(parents=True, exist_ok=True)
+    Path(my_dalex_plots_dir).mkdir(parents=True, exist_ok=True)
+    Path(my_dalex_html_dir).mkdir(parents=True, exist_ok=True)
     Path(my_h2o_plots_dir).mkdir(parents=True, exist_ok=True)
+    return 0
 
 
 # -----------------------
@@ -179,12 +180,12 @@ def use_dalex(model, data_features, data_target, max_deep_tree, max_vars_tree, e
     if explain_preds is not None:
         for i in range(len(data_features)):
             # Break Down (with predict_parts)
-            my_fitted_model_exp_pparts = my_fitted_model_exp.predict_parts(new_observation=data_features.loc[i,], type="break_down")
+            my_fitted_model_exp_pparts = my_fitted_model_exp.predict_parts(new_observation=data_features.loc[i, ], type="break_down")
             # plot Break Down
             fig = my_fitted_model_exp_pparts.plot(show=False)
             plotly.offline.plot(fig, filename=str("DALEX_html/explain_pred_row_no_" + str(i) + '_out.html'), auto_open=False)
 
-    return None
+    return 0
 
 
 # -----------------------------
@@ -230,7 +231,7 @@ def use_shap(model, sample_data, kmeans_n, data_features):
     f = shap.force_plot(explainer.expected_value, shap_values, data_features, plot_cmap="DrDb", show=False)
     shap.save_html("SHAP_html/force_plot.html", f)
 
-    return None
+    return 0
 
 
 # ----------------------------------------
@@ -291,3 +292,5 @@ def use_h2o(model, data_features, data_target):
         pdf.close()
     except AttributeError:
         print("Explain object of H2O model has no attribute Individual Conditional Expectation")
+
+    return 0

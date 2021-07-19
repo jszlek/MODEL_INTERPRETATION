@@ -3,23 +3,35 @@ import shap
 import matplotlib.pyplot as plt
 import dalex as dx
 from aux_functions import extract_pipeline, prepare_directories, use_shap, use_dalex, use_h2o, check_min_h2o_version, load_data
+from configparser import ConfigParser
 
+# config parser init
+config = ConfigParser(allow_no_value=True)
+config.read('config.ini')
 
-my_data_filename = 'test_h2o_shap.txt'
-my_data_sep = '\t'
-my_data_output = 'Q'
+# data config
+my_data_filename = config['DEFAULT']['my_data_filename']
+my_data_sep = config['DEFAULT']['my_data_sep']
+my_data_output = config['DEFAULT']['my_data_output']
 
-my_model_filename = 'StackedEnsemble_BestOfFamily_AutoML_20210715_231637'
-my_model = 'h2o'   # options 'tpot', 'h2o'
+# explain in
 
-my_sample_data: str = 'kmeans'      # options 'all', 'kmeans'
-my_kmeans_n = 2
+# model filename and type
+my_model_filename = config['DEFAULT']['my_model_filename']
+my_model = config['DEFAULT']['my_model']
 
-# methods
-if_use_shap = True
-if_use_dalex = True
-if_use_h2o = True   # can be applied only for h2o models and H2O platform
+# sampling data config
+my_sample_data = config['DEFAULT']['my_sample_data']
+my_kmeans_n = config['DEFAULT'].getint('my_kmeans_n')
 
+# methods used config
+if_use_shap = config['DEFAULT'].getboolean('if_use_shap')
+if_use_dalex = config['DEFAULT'].getboolean('if_use_dalex')
+if_use_h2o = config['DEFAULT'].getboolean('if_use_h2o')
+
+# surrogate model config
+my_max_deep_tree = config['DEFAULT'].getint('my_max_deep_tree')
+my_max_vars_tree = config['DEFAULT'].getint('my_max_vars_tree')
 
 if my_model == 'tpot':
 
@@ -40,8 +52,8 @@ if my_model == 'tpot':
 
     if if_use_dalex == True:
         use_dalex(model=my_fitted_model, data_features=training_features,
-                  data_target=training_target, max_deep_tree=5,
-                  max_vars_tree=5, explain_preds=training_features)
+                  data_target=training_target, max_deep_tree=my_max_deep_tree,
+                  max_vars_tree=my_max_vars_tree, explain_preds=training_features)
 
     if if_use_shap == True:
         use_shap(model=my_fitted_model, data_features=training_features,
