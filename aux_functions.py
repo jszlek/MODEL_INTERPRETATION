@@ -119,13 +119,11 @@ def check_min_h2o_version():
 # LIME
 # ---------------------------
 
-def use_lime(): # currently unused part of the code
+def use_lime():  # currently unused part of the code
     import lime
     import lime.lime_tabular
-
-    explainer = lime.lime_tabular.LimeTabularExplainer(np.array(X_train), feature_names,
-                                                       class_names, categorical_features, mode)
-
+    # explainer = lime.lime_tabular.LimeTabularExplainer(np.array(X_train), feature_names,
+    #                                                   class_names, categorical_features, mode)
     # np.array(X_train): The training data
     # class_names: The target variable(for regression), different classes in the target
     # variable(
@@ -178,9 +176,9 @@ def use_dalex(model, data_features, data_target, max_deep_tree, max_vars_tree, e
         plotly.offline.plot(fig, filename=str('DALEX_plots/'+ i +'_residual' +'.html'), auto_open=False)
 
     if explain_preds is not None:
-        for i in range(len(data_features)):
+        for i in range(len(explain_preds)):
             # Break Down (with predict_parts)
-            my_fitted_model_exp_pparts = my_fitted_model_exp.predict_parts(new_observation=data_features.loc[i, ], type="break_down")
+            my_fitted_model_exp_pparts = my_fitted_model_exp.predict_parts(new_observation=explain_preds.loc[i, ], type="break_down")
             # plot Break Down
             fig = my_fitted_model_exp_pparts.plot(show=False)
             plotly.offline.plot(fig, filename=str("DALEX_html/explain_pred_row_no_" + str(i) + '_out.html'), auto_open=False)
