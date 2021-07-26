@@ -18,6 +18,7 @@ Required packages:
 `matplotlib`
 `ipython`
 `xgboost`
+`packaging`
 
 Proposed mode of installation in conda (should work for ptyhon>=3.6.5):  
 `conda create -n for_h2o`  
