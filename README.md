@@ -23,4 +23,4 @@ Required packages:
 Proposed mode of installation in conda (should work for ptyhon>=3.6.5):  
 `conda create -n for_h2o`  
 `conda install -c h2oai h2o`  
-`conda install tpot shap dalex pandas statsmodels numpy scipy scikit-learn matplotlib ipython xgboost`  
+`conda install tpot shap dalex pandas statsmodels numpy scipy scikit-learn matplotlib ipython xgboost packaging`  
