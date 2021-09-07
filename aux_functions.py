@@ -236,20 +236,46 @@ def use_shap(model, sample_data, kmeans_n, data_features):
 # Explain model - internal function of H2O
 # ----------------------------------------
 
-def use_h2o(model, data_features, data_target):
+def use_h2o(model, data_features, data_target,
+            top_n_features = None, include_explanations = None,
+            pdp_2d = True):
     import pandas as pd
     import matplotlib as mpl
     mpl.use('Agg')
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
     import h2o
+    import itertools
 
     # the data
     dataset = pd.concat([data_features, data_target], axis=1)
     dataset_frame = h2o.H2OFrame(dataset)
 
-    expl_object = model.explain(dataset_frame)
+    # explain() function parameters
+    if top_n_features is None:
+        top_n_features = len(data_features.columns)
+    else:
+        top_n_features = top_n_features
 
+    if include_explanations is None:
+        include_explanations = ["leaderboard", "residual_analysis", "confusion_matrix",
+                                "varimp", "varimp_heatmap", "model_correlation_heatmap",
+                                "shap_summary", "pdp", "ice"]
+    else:
+        include_explanations = include_explanations
+
+    expl_object = model.explain(dataset_frame, top_n_features = top_n_features, include_explanations = include_explanations)
+
+    # leaderboard
+    try:
+        pdf = PdfPages("H2O_plots/leaderboard_h2o_explain_object_output.pdf")
+        for i in expl_object.get('leaderboard').get('plots').items().__iter__():
+            pdf.savefig(i[1])
+        pdf.close()
+    except AttributeError:
+        print("Explain object of H2O model has no attribute Leaderboard")
+
+    # residual analysis
     try:
         pdf = PdfPages("H2O_plots/residuals_h2o_explain_object_output.pdf")
         for i in expl_object.get('residual_analysis').get('plots').items().__iter__():
@@ -258,14 +284,16 @@ def use_h2o(model, data_features, data_target):
     except AttributeError:
         print("Explain object of H2O model has no attribute Residual Analysis")
 
+    # confusion matrix
     try:
-        pdf = PdfPages("H2O_plots/pdp_h2o_explain_object_output.pdf")
-        for i in expl_object.get('pdp').get('plots').items().__iter__():
+        pdf = PdfPages("H2O_plots/confusion_matrix_h2o_explain_object_output.pdf")
+        for i in expl_object.get('confusion_matrix').get('plots').items().__iter__():
             pdf.savefig(i[1])
         pdf.close()
     except AttributeError:
-        print("Explain object of H2O model has no attribute Partial Dependence Plot")
+        print("Explain object of H2O model has no attribute Confusion Matrix")
 
+    # varimp
     try:
         pdf = PdfPages("H2O_plots/varimp_h2o_explain_object_output.pdf")
         for i in expl_object.get('varimp').get('plots').items().__iter__():
@@ -274,6 +302,34 @@ def use_h2o(model, data_features, data_target):
     except AttributeError:
         print("Explain object of H2O model has no attribute Variable Importance")
 
+    # varimp heatmap
+    try:
+        pdf = PdfPages("H2O_plots/varimp_heatmap_h2o_explain_object_output.pdf")
+        for i in expl_object.get('varimp_heatmap').get('plots').items().__iter__():
+            pdf.savefig(i[1])
+        pdf.close()
+    except AttributeError:
+        print("Explain object of H2O model has no attribute Variable Importance Heatmap")
+
+    # model_correlation_heatmap
+    try:
+        pdf = PdfPages("H2O_plots/model_correlation_heatmap_h2o_explain_object_output.pdf")
+        for i in expl_object.get('model_correlation_heatmap').get('plots').items().__iter__():
+            pdf.savefig(i[1])
+        pdf.close()
+    except AttributeError:
+        print("Explain object of H2O model has no attribute Model Correlation Heatmap")
+
+    # pdp
+    try:
+        pdf = PdfPages("H2O_plots/pdp_h2o_explain_object_output.pdf")
+        for i in expl_object.get('pdp').get('plots').items().__iter__():
+            pdf.savefig(i[1])
+        pdf.close()
+    except AttributeError:
+        print("Explain object of H2O model has no attribute Partial Dependence Plot")
+
+    # shap_summary
     try:
         pdf = PdfPages("H2O_plots/shap_summary_h2o_explain_object_output.pdf")
         for i in expl_object.get('shap_summary').get('plots').items().__iter__():
@@ -282,6 +338,7 @@ def use_h2o(model, data_features, data_target):
     except AttributeError:
         print("Explain object of H2O model has no attribute SHAP summary")
 
+    # ice
     try:
         pdf = PdfPages("H2O_plots/ice_h2o_explain_object_output.pdf")
         for i in expl_object.get('ice').get('plots').items().__iter__():
@@ -290,5 +347,17 @@ def use_h2o(model, data_features, data_target):
         pdf.close()
     except AttributeError:
         print("Explain object of H2O model has no attribute Individual Conditional Expectation")
+
+    # pdp_2d
+    if pdp_2d is True:
+        comb = list(itertools.combinations(data_features.columns,r=2))
+        for i in range(len(comb)):
+            try:
+                model.partial_plot(dataset_frame, plot_stddev = False,
+                                   save_to_file=str('./H2O_plots/' + comb[i][0] + '_'+ comb[i][1] +'.pdf'),
+                                   figsize=(12, 10), col_pairs_2dpdp = [[comb[i][0], comb[i][1]]])
+            except ValueError:
+                print("2d PDP plot couldn't be drawn: ",
+                      str(comb[i][0]) + '_vs_'+ str(comb[i][1]))
 
     return 0
